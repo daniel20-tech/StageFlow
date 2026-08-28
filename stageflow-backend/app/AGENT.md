@@ -27,7 +27,6 @@ Toute contribution de code doit respecter les contraintes suivantes :
 4. **Gestion propre des erreurs :**
    * Renvoyer des exceptions HTTP explicites avec FastAPI (`HTTPException`) accompagnées d'un code statut adapté (`400`, `401`, `403`, `404`, `500`).
    * Toujours vérifier l'existence des ressources référencées par des clés étrangères avant traitement et utiliser des UUID valides pour les identifiants.
-   * Toujours utiliser le self delete, ne jamais supprimer entierement et definitivement une donnée
 
 ---
 
