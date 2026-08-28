@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # URL de connexion : postgresql://UTILISATEUR:MOT_DE_PASSE@HOST:PORT/NOM_BASE_DE_DONNEES
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:mot_de_passe@localhost:5432/stageflow_db"
+SQLALCHEMY_DATABASE_URL = "postgresql://postgres:danielstageflow@localhost:5432/stageflow_db"
 
 # Moteur SQLAlchemy qui gère la connexion
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
