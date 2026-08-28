@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.pyo
 AGENT.md
+
+node_modules/
+dist/
+*.log
