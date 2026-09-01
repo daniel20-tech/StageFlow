@@ -35,3 +35,10 @@ class StatutDocument(str, Enum):
     SOUMIS = "SOUMIS"
     VALIDE = "VALIDE"
     REJETE = "REJETE"
+
+
+class StatutEvaluation(str, Enum):
+    BROUILLON = "BROUILLON"
+    SOUMISE = "SOUMISE"
+    VALIDEE = "VALIDEE"
+    REJETEE = "REJETEE"

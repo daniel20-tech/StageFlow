@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Sidebar from "./components/Sidebar.jsx";
 import ResourceView from "./components/ResourceView.jsx";
-import { api } from "./api.js";
+import DossierDeStage from "./components/DossierDeStage.jsx";
+import Login from "./components/Login.jsx";
+import { api, setToken } from "./api.js";
 
 const STAGE_STATUSES = [
   "BROUILLON",
@@ -19,11 +22,25 @@ const TASK_STATUSES = [
 ];
 const DOCUMENT_STATUSES = ["EN_ATTENTE", "SOUMIS", "VALIDE", "REJETE"];
 const PERMISSION_STATUSES = ["EN_ATTENTE", "APPROUVE", "REJETE"];
+const EVALUATION_STATUSES = ["BROUILLON", "SOUMISE", "VALIDEE", "REJETEE"];
 
 const RESOURCES = [
   {
+    key: "dossier",
+    label: "Dossier de stage",
+    roles: ["ADMIN", "INTERN"],
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    view: <DossierDeStage />,
+  },
+  {
     key: "users",
     label: "Utilisateurs",
+    roles: ["ADMIN"],
+    icon: null,
     view: (
       <ResourceView
         idField="id"
@@ -40,7 +57,7 @@ const RESOURCES = [
           { name: "nom", label: "Nom" },
           { name: "prenom", label: "Prénom" },
           { name: "email", label: "Email" },
-          { name: "mot_de_passe_hash", label: "Mot de passe (hash)" },
+          { name: "mot_de_passe", label: "Mot de passe (min. 8 caractères)" },
           {
             name: "role",
             label: "Rôle",
@@ -54,6 +71,8 @@ const RESOURCES = [
   {
     key: "interns",
     label: "Stagiaires",
+    roles: ["ADMIN"],
+    icon: null,
     view: (
       <ResourceView
         idField="id"
@@ -61,7 +80,7 @@ const RESOURCES = [
         createFn={api.createIntern}
         columns={[
           { key: "id", label: "ID" },
-          { key: "user_id", label: "User ID" },
+          { key: "utilisateur_id", label: "User ID" },
           { key: "matricule", label: "Matricule" },
           { key: "telephone", label: "Téléphone" },
           { key: "adresse", label: "Adresse" },
@@ -78,6 +97,8 @@ const RESOURCES = [
   {
     key: "institutions",
     label: "Établissements",
+    roles: ["ADMIN"],
+    icon: null,
     view: (
       <ResourceView
         idField="etablissement_id"
@@ -100,6 +121,8 @@ const RESOURCES = [
   {
     key: "stages",
     label: "Stages",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="stage_id"
@@ -134,6 +157,8 @@ const RESOURCES = [
   {
     key: "tasks",
     label: "Tâches",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="tache_id"
@@ -163,6 +188,8 @@ const RESOURCES = [
   {
     key: "documents",
     label: "Documents",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="document_id"
@@ -197,6 +224,8 @@ const RESOURCES = [
   {
     key: "submissions",
     label: "Soumissions",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="soumison_id"
@@ -223,6 +252,8 @@ const RESOURCES = [
   {
     key: "permissions",
     label: "Permissions",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="permission_id"
@@ -252,16 +283,24 @@ const RESOURCES = [
   {
     key: "evaluations",
     label: "Évaluations",
+    roles: ["ADMIN", "SUPERVISOR"],
+    icon: null,
     view: (
       <ResourceView
         idField="evaluation_id"
         listFn={api.listEvaluations}
         createFn={api.createEvaluation}
+        statusConfig={{
+          field: "statut",
+          options: EVALUATION_STATUSES,
+          updateFn: api.updateEvaluationStatus,
+        }}
         columns={[
           { key: "evaluation_id", label: "ID" },
           { key: "stage_id", label: "Stage" },
           { key: "type_eval", label: "Type" },
           { key: "note_globale", label: "Note" },
+          { key: "statut", label: "Statut" },
         ]}
         formFields={[
           { name: "stage_id", label: "Stage ID" },
@@ -274,27 +313,99 @@ const RESOURCES = [
   },
 ];
 
+const SESSION_KEY = "stageflow_session";
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    const roleMap = {
+      ADMINISTRATEUR: "ADMIN",
+      ENCADREUR: "SUPERVISOR",
+      STAGIAIRE: "INTERN",
+    };
+    return {
+      ...session,
+      role: roleMap[session.role] || session.role,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session) {
+  if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  else localStorage.removeItem(SESSION_KEY);
+}
+
 export default function App() {
+  const [session, setSession] = useState(loadSession);
   const [activeTab, setActiveTab] = useState(RESOURCES[0].key);
-  const active = RESOURCES.find((resource) => resource.key === activeTab);
+
+  const resources = session
+    ? RESOURCES.filter((r) => r.roles.includes(session.role))
+    : [];
+
+  const handleLogin = (data) => {
+    setToken(data.access_token);
+    const roleMap = {
+      ADMINISTRATEUR: "ADMIN",
+      ENCADREUR: "SUPERVISOR",
+      STAGIAIRE: "INTERN",
+    };
+    const sessionData = {
+      access_token: data.access_token,
+      utilisateur_id: data.utilisateur_id,
+      nom: data.nom,
+      prenom: data.prenom,
+      email: data.email,
+      role: roleMap[data.role] || data.role,
+    };
+    setSession(sessionData);
+    saveSession(sessionData);
+    setActiveTab(RESOURCES[0].key);
+  };
+
+  const handleLogout = () => {
+    setToken(null);
+    setSession(null);
+    saveSession(null);
+  };
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setSession(null);
+      saveSession(null);
+    };
+    window.addEventListener("stageflow:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("stageflow:unauthorized", onUnauthorized);
+  }, []);
+
+  if (!session) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  const active = resources.find((resource) => resource.key === activeTab) || resources[0];
 
   return (
-    <>
-      <header>
-        <h1>StageFlow</h1>
-      </header>
-      <nav className="tabs">
-        {RESOURCES.map((resource) => (
-          <button
-            key={resource.key}
-            className={`tab ${resource.key === activeTab ? "active" : ""}`}
-            onClick={() => setActiveTab(resource.key)}
-          >
-            {resource.label}
-          </button>
-        ))}
-      </nav>
-      <main>{active.view}</main>
-    </>
+    <div className="min-h-screen bg-base-200/30 flex">
+      {/* Sidebar Fixed */}
+      <Sidebar
+        resources={resources}
+        activeTab={active.key}
+        onTabChange={setActiveTab}
+        user={session}
+        onLogout={handleLogout}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 ml-64 min-h-screen">
+        {/* Page Content with Padding */}
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          {active.view}
+        </div>
+      </main>
+    </div>
   );
 }

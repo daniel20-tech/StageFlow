@@ -6,7 +6,7 @@ Chaque entité expose une table de transitions explicite. La validation est dél
 
 from typing import Dict, Set
 
-from app.enums import StatutStage, StatutTache, StatutPermission, StatutDocument
+from app.enums import StatutStage, StatutTache, StatutPermission, StatutDocument, StatutEvaluation
 
 _TRANSITIONS_STAGE: Dict[StatutStage, Set[StatutStage]] = {
     StatutStage.BROUILLON: {StatutStage.EN_ATTENTE},
@@ -38,6 +38,13 @@ _TRANSITIONS_DOCUMENT: Dict[StatutDocument, Set[StatutDocument]] = {
     StatutDocument.REJETE: set(),
 }
 
+_TRANSITIONS_EVALUATION: Dict[StatutEvaluation, Set[StatutEvaluation]] = {
+    StatutEvaluation.BROUILLON: {StatutEvaluation.SOUMISE},
+    StatutEvaluation.SOUMISE: {StatutEvaluation.VALIDEE, StatutEvaluation.REJETEE},
+    StatutEvaluation.VALIDEE: set(),
+    StatutEvaluation.REJETEE: {StatutEvaluation.SOUMISE},
+}
+
 
 def est_transition_valide(actuel, cible, transitions) -> bool:
     return cible in transitions.get(actuel, set())
@@ -57,3 +64,7 @@ def valider_permission(actuel: StatutPermission, cible: StatutPermission) -> boo
 
 def valider_document(actuel: StatutDocument, cible: StatutDocument) -> bool:
     return est_transition_valide(actuel, cible, _TRANSITIONS_DOCUMENT)
+
+
+def valider_evaluation(actuel: StatutEvaluation, cible: StatutEvaluation) -> bool:
+    return est_transition_valide(actuel, cible, _TRANSITIONS_EVALUATION)
