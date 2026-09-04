@@ -21,6 +21,7 @@ class Stage(Base):
 
     stagiaire = relationship("Stagiaire", back_populates="stages")
     etablissement = relationship("Etablissement", back_populates="stages")
+    encadreur = relationship("Utilisateur", foreign_keys=[encadreur_id])
     documents = relationship("DocumentStage", back_populates="stage", cascade="all, delete-orphan")
     taches = relationship("Tache", back_populates="stage", cascade="all, delete-orphan")
     permissions = relationship("Permission", back_populates="stage", cascade="all, delete-orphan")

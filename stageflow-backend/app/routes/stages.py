@@ -74,7 +74,7 @@ def _valider_encadreur(encadreur_id, db):
     utilisateur = db.query(Utilisateur).filter(Utilisateur.id == encadreur_id).first()
     if not utilisateur:
         raise HTTPException(status_code=404, detail="Encadreur référencé non trouvé")
-    if utilisateur.role != Role.SUPERVISOR.value:
+    if utilisateur.role != Role.ENCADREUR.value:
         raise HTTPException(
             status_code=400,
             detail="L'utilisateur ciblé n'est pas un encadreur (rôle attendu: SUPERVISOR)",

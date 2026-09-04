@@ -4,9 +4,11 @@ from uuid import UUID
 
 from app.database import get_db
 from app.deps import get_current_user, require_admin
-from app.models.utilisateur import Utilisateur
-from app.schemas.utilisateur import UtilisateurCreate, UtilisateurRead, MotDePasseUpdate
+from app.models.utilisateur import Utilisateur, Encadreur
+from app.models.stagiaire import Stagiaire
+from app.schemas.utilisateur import UtilisateurCreate, UtilisateurRead, MotDePasseUpdate, CompteCreate
 from app.security import hash_mot_de_passe
+from app.enums import Role
 
 router = APIRouter(prefix="/utilisateurs", tags=["utilisateurs"])
 
@@ -16,6 +18,18 @@ def list_utilisateurs(
     _: Utilisateur = Depends(require_admin), db: Session = Depends(get_db)
 ):
     return db.query(Utilisateur).all()
+
+
+@router.get("/encadreurs", response_model=list[UtilisateurRead])
+def list_encadreurs(
+    _: Utilisateur = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    return (
+        db.query(Utilisateur)
+        .filter(Utilisateur.role == Role.ENCADREUR.value)
+        .order_by(Utilisateur.nom, Utilisateur.prenom)
+        .all()
+    )
 
 
 @router.get("/{utilisateur_id}", response_model=UtilisateurRead)
@@ -45,6 +59,57 @@ def create_utilisateur(
     valeurs["mot_de_passe_hash"] = hash_mot_de_passe(valeurs.pop("mot_de_passe"))
     user = Utilisateur(**valeurs)
     db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/compte", response_model=UtilisateurRead, status_code=201)
+def create_compte(
+    data: CompteCreate,
+    _: Utilisateur = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    existing = db.query(Utilisateur).filter(Utilisateur.email == data.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
+
+    user = Utilisateur(
+        nom=data.nom,
+        prenom=data.prenom,
+        email=data.email,
+        mot_de_passe_hash=hash_mot_de_passe(data.mot_de_passe),
+        role=data.role.value,
+    )
+    db.add(user)
+    db.flush()
+
+    if data.role == Role.STAGIAIRE:
+        if not data.matricule:
+            raise HTTPException(status_code=400, detail="Le matricule est requis pour un stagiaire")
+        existing_matricule = db.query(Stagiaire).filter(
+            Stagiaire.matricule == data.matricule
+        ).first()
+        if existing_matricule:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Ce matricule est déjà utilisé")
+        stagiaire = Stagiaire(
+            utilisateur_id=user.id,
+            telephone=data.telephone,
+            adresse=data.adresse,
+            matricule=data.matricule,
+            filiere=data.filiere,
+            periode_stage=data.periode_stage,
+        )
+        db.add(stagiaire)
+    elif data.role == Role.ENCADREUR:
+        encadreur = Encadreur(
+            utilisateur_id=user.id,
+            departement=data.departement,
+            specialite=data.specialite,
+        )
+        db.add(encadreur)
+
     db.commit()
     db.refresh(user)
     return user

@@ -2,9 +2,9 @@ from enum import Enum
 
 
 class Role(str, Enum):
-    ADMIN = "ADMIN"
-    INTERN = "INTERN"
-    SUPERVISOR = "SUPERVISOR"
+    ADMINISTRATEUR = "ADMINISTRATEUR"
+    STAGIAIRE = "STAGIAIRE"
+    ENCADREUR = "ENCADREUR"
 
 
 class StatutStage(str, Enum):

@@ -13,6 +13,8 @@ class Stagiaire(Base):
     telephone = Column(String(30), nullable=True)
     adresse = Column(String(255), nullable=True)
     matricule = Column(String(50), unique=True, nullable=False)
+    filiere = Column(String(100), nullable=True)
+    periode_stage = Column(String(100), nullable=True)
 
     utilisateur = relationship("Utilisateur", back_populates="stagiaire_profile")
     stages = relationship("Stage", back_populates="stagiaire")

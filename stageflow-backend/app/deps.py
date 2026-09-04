@@ -59,5 +59,5 @@ def require_roles(*roles: Role):
     return _guard
 
 
-require_admin = require_roles(Role.ADMIN)
-require_staff = require_roles(Role.ADMIN, Role.SUPERVISOR)
+require_admin = require_roles(Role.ADMINISTRATEUR)
+require_staff = require_roles(Role.ADMINISTRATEUR, Role.ENCADREUR)

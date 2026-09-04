@@ -1,9 +1,65 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import ResourceView from "./components/ResourceView.jsx";
+import StagiairesView from "./components/StagiairesView.jsx";
+import UsersView from "./components/UsersView.jsx";
 import DossierDeStage from "./components/DossierDeStage.jsx";
 import Login from "./components/Login.jsx";
 import { api, setToken } from "./api.js";
+
+const SIDEBAR_ICONS = {
+  dossier: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  users: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  intern: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+    </svg>
+  ),
+  institution: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  ),
+  stages: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  task: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  ),
+  document: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  submission: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+    </svg>
+  ),
+  permission: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  ),
+  evaluation: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+};
 
 const STAGE_STATUSES = [
   "BROUILLON",
@@ -29,76 +85,28 @@ const RESOURCES = [
     key: "dossier",
     label: "Dossier de stage",
     roles: ["ADMIN", "INTERN"],
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
+    icon: SIDEBAR_ICONS.dossier,
     view: <DossierDeStage />,
   },
   {
     key: "users",
     label: "Utilisateurs",
     roles: ["ADMIN"],
-    icon: null,
-    view: (
-      <ResourceView
-        idField="id"
-        listFn={api.listUsers}
-        createFn={api.createUser}
-        columns={[
-          { key: "id", label: "ID" },
-          { key: "nom", label: "Nom" },
-          { key: "prenom", label: "Prénom" },
-          { key: "email", label: "Email" },
-          { key: "role", label: "Rôle" },
-        ]}
-        formFields={[
-          { name: "nom", label: "Nom" },
-          { name: "prenom", label: "Prénom" },
-          { name: "email", label: "Email" },
-          { name: "mot_de_passe", label: "Mot de passe (min. 8 caractères)" },
-          {
-            name: "role",
-            label: "Rôle",
-            type: "select",
-            options: ["ADMIN", "INTERN", "SUPERVISOR"],
-          },
-        ]}
-      />
-    ),
+    icon: SIDEBAR_ICONS.users,
+    view: <UsersView />,
   },
   {
     key: "interns",
     label: "Stagiaires",
     roles: ["ADMIN"],
-    icon: null,
-    view: (
-      <ResourceView
-        idField="id"
-        listFn={api.listInterns}
-        createFn={api.createIntern}
-        columns={[
-          { key: "id", label: "ID" },
-          { key: "utilisateur_id", label: "User ID" },
-          { key: "matricule", label: "Matricule" },
-          { key: "telephone", label: "Téléphone" },
-          { key: "adresse", label: "Adresse" },
-        ]}
-        formFields={[
-          { name: "utilisateur_id", label: "User ID" },
-          { name: "matricule", label: "Matricule" },
-          { name: "telephone", label: "Téléphone" },
-          { name: "adresse", label: "Adresse" },
-        ]}
-      />
-    ),
+    icon: SIDEBAR_ICONS.intern,
+    view: <StagiairesView />,
   },
   {
     key: "institutions",
     label: "Établissements",
     roles: ["ADMIN"],
-    icon: null,
+    icon: SIDEBAR_ICONS.institution,
     view: (
       <ResourceView
         idField="etablissement_id"
@@ -122,7 +130,7 @@ const RESOURCES = [
     key: "stages",
     label: "Stages",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.stages,
     view: (
       <ResourceView
         idField="stage_id"
@@ -158,7 +166,7 @@ const RESOURCES = [
     key: "tasks",
     label: "Tâches",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.task,
     view: (
       <ResourceView
         idField="tache_id"
@@ -189,7 +197,7 @@ const RESOURCES = [
     key: "documents",
     label: "Documents",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.document,
     view: (
       <ResourceView
         idField="document_id"
@@ -225,7 +233,7 @@ const RESOURCES = [
     key: "submissions",
     label: "Soumissions",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.submission,
     view: (
       <ResourceView
         idField="soumison_id"
@@ -253,7 +261,7 @@ const RESOURCES = [
     key: "permissions",
     label: "Permissions",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.permission,
     view: (
       <ResourceView
         idField="permission_id"
@@ -284,7 +292,7 @@ const RESOURCES = [
     key: "evaluations",
     label: "Évaluations",
     roles: ["ADMIN", "SUPERVISOR"],
-    icon: null,
+    icon: SIDEBAR_ICONS.evaluation,
     view: (
       <ResourceView
         idField="evaluation_id"

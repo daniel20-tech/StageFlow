@@ -44,8 +44,13 @@ export const api = {
 
   // Users & roles
   listUsers: () => unwrap(http.get("/utilisateurs")),
+  listSupervisors: () => unwrap(http.get("/utilisateurs/encadreurs")),
   createUser: (data) => unwrap(http.post("/utilisateurs", data)),
+  createCompte: (data) => unwrap(http.post("/utilisateurs/compte", data)),
   listInterns: () => unwrap(http.get("/stagiaires")),
+  listInternsWithStages: () => unwrap(http.get("/stagiaires/with-stages")),
+  listInternsCompact: (params) =>
+    unwrap(http.get("/stagiaires/compact", { params })),
   createIntern: (data) => unwrap(http.post("/stagiaires", data)),
   listInstitutions: () => unwrap(http.get("/etablissements")),
   createInstitution: (data) => unwrap(http.post("/etablissements", data)),
@@ -63,6 +68,7 @@ export const api = {
   // Others
   getUser: (id) => unwrap(http.get(`/utilisateurs/${id}`)),
   getIntern: (id) => unwrap(http.get(`/stagiaires/${id}`)),
+  getInternWithStages: (id) => unwrap(http.get(`/stagiaires/${id}/with-stages`)),
   getInstitution: (id) => unwrap(http.get(`/etablissements/${id}`)),
   listDocumentsByStage: (stageId) =>
     unwrap(http.get("/documents", { params: { stage_id: stageId } })),
@@ -78,6 +84,17 @@ export const api = {
   createDocument: (data) => unwrap(http.post("/documents", data)),
   updateDocumentStatus: (id, status) =>
     unwrap(http.patch(`/documents/${id}/statut`, { statut_doc: status })),
+  uploadDocument: ({ stage_id, type_doc, nom_doc, statut_doc, file }) => {
+    const formData = new FormData();
+    formData.append("stage_id", stage_id);
+    formData.append("type_doc", type_doc);
+    if (nom_doc) formData.append("nom_doc", nom_doc);
+    formData.append("statut_doc", statut_doc || "EN_ATTENTE");
+    formData.append("file", file);
+    return unwrap(http.post("/documents/upload", formData));
+  },
+  deleteDocument: (id) => unwrap(http.delete(`/documents/${id}`)),
+  documentUrl: (id) => `http://localhost:8000/api/v1/documents/${id}/fichier`,
 
   // Submissions (scoped by task)
   listSubmissionsByTask: (taskId) => unwrap(http.get(`/soumissions/tache/${taskId}`)),

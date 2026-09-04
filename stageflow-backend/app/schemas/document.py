@@ -22,6 +22,7 @@ class DocumentStageRead(_ORMModel):
     nom_doc: str
     type_doc: str
     chemin_fichier: str
+    taille_fichier: Optional[int] = None
     a_retourner: bool
     statut_doc: str
     date_reception: Optional[datetime] = None

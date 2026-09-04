@@ -28,3 +28,5 @@ class Encadreur(Base):
     __tablename__ = "encadreur"
 
     utilisateur_id = Column(UUID(as_uuid=True), ForeignKey("utilisateur.id", ondelete="CASCADE"), primary_key=True)
+    departement = Column(String(100), nullable=True)
+    specialite = Column(String(100), nullable=True)
